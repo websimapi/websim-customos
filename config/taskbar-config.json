@@ -1,7 +1,7 @@
 {
     "position": "bottom",
     "startButtonIcon": "assets/start-icon.png",
-    "pinnedApps": ["file-explorer", "settings", "terminal"],
+    "pinnedApps": ["file-explorer", "settings", "terminal", "internet-explorer"],
     "showClock": true,
     "showDate": false,
     "autoHide": false,
@@ -14,4 +14,3 @@
         { "id": "notifications", "name": "Notifications", "icon": "assets/notification-icon.png" }
     ]
 }
-

@@ -3,6 +3,7 @@ import { SettingsApp } from '../components/settings-app.js';
 import { Terminal } from '../components/terminal.js';
 import { TextEditor } from '../components/text-editor.js';
 import { CustomizationApp } from '../components/customization-app.js';
+import { InternetExplorer } from '../components/internet-explorer.js';
 
 export function registerComponents(app) {
     // Register app components
@@ -11,7 +12,8 @@ export function registerComponents(app) {
         'settings-app': SettingsApp,
         'terminal': Terminal,
         'text-editor': TextEditor,
-        'customization-app': CustomizationApp
+        'customization-app': CustomizationApp,
+        'internet-explorer': InternetExplorer
     };
 }
 

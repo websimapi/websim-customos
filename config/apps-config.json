@@ -2,7 +2,8 @@
     "desktop": [
         { "id": "file-explorer", "name": "Files", "icon": "assets/file-explorer-icon.png" },
         { "id": "settings", "name": "Settings", "icon": "assets/settings-icon.png" },
-        { "id": "customization", "name": "Customize OS", "icon": "assets/customize-icon.png" }
+        { "id": "customization", "name": "Customize OS", "icon": "assets/customize-icon.png" },
+        { "id": "internet-explorer", "name": "Internet", "icon": "assets/internet-explorer-icon.png" }
     ],
     "installed": [
         { 
@@ -44,7 +45,14 @@
             "component": "customization-app",
             "category": "system",
             "defaultData": {}
+        },
+        { 
+            "id": "internet-explorer", 
+            "name": "Internet", 
+            "icon": "assets/internet-explorer-icon.png", 
+            "component": "internet-explorer",
+            "category": "utilities",
+            "defaultData": {}
         }
     ]
 }
-

@@ -296,7 +296,9 @@
                 <div class="image-preview-caption">
                     {{ imagePreviewType === 'wallpaper' ? 'New desktop wallpaper' : 
                        imagePreviewType === 'lockscreen' ? 'New lock screen background' :
-                       imagePreviewType === 'avatar' ? 'New user avatar' : 'Generated image' }}
+                       imagePreviewType === 'avatar' ? 'New user avatar' : 
+                       imagePreviewType && imagePreviewType.startsWith('app-icon-') ? 'New app icon for ' + imagePreviewType.replace('app-icon-', '') : 
+                       'Generated image: ' + imagePreviewType }}
                 </div>
             </div>
             
@@ -336,6 +338,62 @@
                 </ul>
                 <p>Use natural language to describe what you want, and the AI will try to implement it!</p>
                 <p><strong>Image Generation:</strong> You can ask for custom images for wallpapers, lock screens, icons, and avatars!</p>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="internet-explorer-template">
+        <div class="internet-explorer">
+            <div class="browser-toolbar">
+                <div class="nav-buttons">
+                    <button class="nav-button" @click="goBack" :disabled="historyIndex <= 0">
+                        ←
+                    </button>
+                    <button class="nav-button" @click="goForward" :disabled="historyIndex >= history.length - 1">
+                        →
+                    </button>
+                    <button class="nav-button" @click="refresh">
+                        ↻
+                    </button>
+                    <button class="nav-button" @click="goHome">
+                        🏠
+                    </button>
+                </div>
+                <div class="address-bar-container">
+                    <input 
+                        ref="addressBar"
+                        type="text" 
+                        class="address-bar" 
+                        v-model="inputUrl" 
+                        @keyup.enter="handleAddressSubmit"
+                    >
+                    <button class="go-button" @click="handleAddressSubmit">Go</button>
+                </div>
+            </div>
+            
+            <div class="web-frame-container">
+                <iframe 
+                    ref="webFrame"
+                    v-if="url" 
+                    :src="url" 
+                    class="web-frame"
+                    @load="handleIframeLoad"
+                    sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
+                    referrerpolicy="no-referrer"
+                ></iframe>
+                
+                <div class="loading-indicator" :class="{ active: isLoading }"></div>
+                
+                <div v-if="!url" class="iframe-error-container">
+                    <h3>Page couldn't be loaded</h3>
+                    <p>The page at this URL couldn't be loaded. This might be due to security restrictions or network issues.</p>
+                    <button class="iframe-error-button" @click="goHome">Go to Home Page</button>
+                </div>
+            </div>
+            
+            <div class="browser-statusbar">
+                <div v-if="isLoading">Loading...</div>
+                <div v-else>{{ url }}</div>
             </div>
         </div>
     </script>

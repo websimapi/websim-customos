@@ -13,5 +13,4 @@
 @import 'css/settings-app.css';
 @import 'css/terminal.css';
 @import 'css/text-editor.css';
-
-/* Removed all component-specific CSS and moved to individual files */
+@import 'css/internet-explorer.css';
