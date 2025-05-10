@@ -8,7 +8,7 @@ export const InternetExplorer = {
             isLoading: false,
             history: [],
             historyIndex: -1,
-            homePage: 'https://example.com',
+            homePage: 'https://websim.ai',
             bookmarks: [],
             inputUrl: 'https://example.com'
         };
