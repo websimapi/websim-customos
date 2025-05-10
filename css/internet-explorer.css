@@ -4,6 +4,7 @@
     flex-direction: column;
     height: 100%;
     background-color: #fff;
+    overflow: hidden; /* Prevent outer container scrolling */
 }
 
 .browser-toolbar {
@@ -86,12 +87,21 @@
     flex-grow: 1;
     position: relative;
     border: none;
+    overflow: hidden; /* Prevent container scrollbars */
+    box-sizing: border-box;
 }
 
 .web-frame {
+    display: block; /* Ensure proper display mode */
     width: 100%;
     height: 100%;
     border: none;
+    box-sizing: border-box;
+    position: absolute; /* Position to fill container */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
 }
 
 .browser-statusbar {
