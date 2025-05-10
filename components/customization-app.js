@@ -10,9 +10,13 @@ export const CustomizationApp = {
                 "Change the desktop wallpaper to a scenic mountain landscape",
                 "Make the taskbar transparent and move it to the top",
                 "Change the system theme to dark mode",
-                "Add a new productivity app to the desktop"
+                "Create a custom app icon for the terminal",
+                "Change my user avatar to a cartoon robot",
+                "Set a vibrant sunset as my lock screen background"
             ],
-            recentCustomizations: []
+            recentCustomizations: [],
+            imagePreviewUrl: null,
+            imagePreviewType: null
         };
     },
     mounted() {
@@ -32,6 +36,8 @@ export const CustomizationApp = {
             
             this.customizationLoading = true;
             this.customizationResult = null;
+            this.imagePreviewUrl = null;
+            this.imagePreviewType = null;
             
             try {
                 // Find the parent OS Vue instance
@@ -51,8 +57,16 @@ export const CustomizationApp = {
                 // If successful, add to recent customizations
                 if (result && result.success) {
                     this.addToRecentCustomizations(this.customizationPrompt);
-                    // Clear the input after successful customization
-                    this.customizationPrompt = '';
+                    
+                    // Show image preview if available
+                    if (result.imagesPreviews && Object.keys(result.imagesPreviews).length > 0) {
+                        const imageKey = Object.keys(result.imagesPreviews)[0];
+                        this.imagePreviewUrl = result.imagesPreviews[imageKey];
+                        this.imagePreviewType = imageKey;
+                    }
+                    
+                    // Don't clear the input yet - user might want to see what they requested
+                    // after the OS reloads
                 }
                 
             } catch (error) {

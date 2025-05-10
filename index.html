@@ -288,6 +288,18 @@
                 <p>Processing your customization request. This may take a moment...</p>
             </div>
             
+            <div v-if="imagePreviewUrl" class="image-preview-section">
+                <h4>Generated Image Preview:</h4>
+                <div class="image-preview-container">
+                    <img :src="imagePreviewUrl" alt="Generated image preview">
+                </div>
+                <div class="image-preview-caption">
+                    {{ imagePreviewType === 'wallpaper' ? 'New desktop wallpaper' : 
+                       imagePreviewType === 'lockscreen' ? 'New lock screen background' :
+                       imagePreviewType === 'avatar' ? 'New user avatar' : 'Generated image' }}
+                </div>
+            </div>
+            
             <div v-if="customizationResult" class="result-section">
                 <h3>Customization Result</h3>
                 <div v-if="customizationResult.success" class="result-success">
@@ -311,12 +323,14 @@
                     <li>Modify taskbar appearance or position</li>
                     <li>Add/remove/rearrange desktop icons</li>
                     <li>Change system colors or fonts</li>
-                    <li>Update user profile information</li>
+                    <li>Update user profile information or avatar</li>
                     <li>Configure lock screen settings</li>
                     <li>Adjust system time format or language</li>
                     <li>Modify notification settings</li>
+                    <li>Create custom app icons or backgrounds</li>
                 </ul>
                 <p>Use natural language to describe what you want, and the AI will try to implement it!</p>
+                <p><strong>Image Generation:</strong> You can ask for custom images for wallpapers, lock screens, icons, and avatars!</p>
             </div>
         </div>
     </script>

@@ -4,6 +4,7 @@ export class CustomizationManager {
     constructor(app) {
         this.app = app;
         this.lastCustomizationPrompt = '';
+        this.generatedImages = {};
     }
     
     toggleCustomizationMode() {
@@ -17,6 +18,7 @@ export class CustomizationManager {
         this.app.customizationLoading = true;
         this.app.customizationResult = null;
         this.lastCustomizationPrompt = this.app.customizationPrompt;
+        this.generatedImages = {};
         
         try {
             // Step 1: Determine which part of the OS to customize
@@ -28,8 +30,14 @@ export class CustomizationManager {
             });
             
             console.log('Identified affected paths:', identifyRequest.affectedPaths);
+            console.log('Image generation needed:', identifyRequest.imageGeneration || false);
             
-            // Step 2: Generate the actual customization
+            // Step 2: Generate images if needed
+            if (identifyRequest.imageGeneration && identifyRequest.imagePrompts) {
+                await this.generateImages(identifyRequest.imagePrompts);
+            }
+            
+            // Step 3: Generate the actual customization
             const affectedPaths = identifyRequest.affectedPaths || [];
             if (affectedPaths.length === 0) {
                 throw new Error("I couldn't determine which parts of the OS to customize. Please provide more specific details about what you'd like to change.");
@@ -45,6 +53,7 @@ export class CustomizationManager {
             const customizationResult = await this.callLLM({
                 prompt: this.app.customizationPrompt,
                 currentConfig,
+                generatedImages: this.generatedImages,
                 action: 'customize'
             });
             
@@ -63,9 +72,15 @@ export class CustomizationManager {
                 
                 this.app.customizationResult = {
                     success: true,
-                    message: "Your customization has been applied successfully!",
-                    changes: customizationResult.changes
+                    message: "Your customization has been applied successfully! The OS will reload to apply changes.",
+                    changes: customizationResult.changes,
+                    imagesPreviews: this.generatedImages
                 };
+                
+                // Schedule a reload after showing success message
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
             } else {
                 throw new Error(`Couldn't apply changes: ${sandboxResult.error}`);
             }
@@ -77,6 +92,34 @@ export class CustomizationManager {
             };
         } finally {
             this.app.customizationLoading = false;
+        }
+    }
+    
+    async generateImages(imagePrompts) {
+        const imageGenerationTasks = [];
+        
+        for (const [key, prompt] of Object.entries(imagePrompts)) {
+            // Skip if image doesn't need generation
+            if (!prompt) continue;
+            
+            // Generate images using the LLM image generation capability
+            imageGenerationTasks.push(
+                websim.imageGen({
+                    prompt: prompt.description,
+                    aspect_ratio: prompt.aspect || "1:1",
+                    transparent: prompt.transparent || false
+                }).then(result => {
+                    console.log(`Generated image for ${key}:`, result.url);
+                    this.generatedImages[key] = result.url;
+                }).catch(error => {
+                    console.error(`Failed to generate image for ${key}:`, error);
+                })
+            );
+        }
+        
+        // Wait for all image generation tasks to complete
+        if (imageGenerationTasks.length > 0) {
+            await Promise.all(imageGenerationTasks);
         }
     }
     
@@ -136,11 +179,17 @@ export class CustomizationManager {
                 'system-config.json',
                 'startmenu-config.json',
                 'lockscreen-config.json'
+            ],
+            imageAssets: [
+                'wallpaper images',
+                'lock screen background',
+                'app icons',
+                'user avatar'
             ]
         };
     }
     
-    async callLLM({ prompt, systemStructure, currentConfig, action }) {
+    async callLLM({ prompt, systemStructure, currentConfig, generatedImages, action }) {
         try {
             // Prepare the message content based on the action
             let content;
@@ -153,7 +202,15 @@ export class CustomizationManager {
                         text: `Analyze the following customization request and determine which parts of the OS need to be modified.
 Respond directly with JSON, following this schema, and no other text:
 {
-  "affectedPaths": string[]  // Array of config paths that should be modified (e.g. ["desktop.wallpaper", "taskbar.position"])
+  "affectedPaths": string[],  // Array of config paths that should be modified (e.g. ["desktop.wallpaper", "taskbar.position"])
+  "imageGeneration": boolean,  // Whether image generation is needed
+  "imagePrompts": {  // If imageGeneration is true, provide prompts for each image needed
+    [key: string]: {
+      "description": string,  // Detailed description for image generation
+      "transparent": boolean,  // Whether the image should have a transparent background
+      "aspect": string  // Aspect ratio - "1:1", "16:9", etc.
+    }
+  }
 }
 
 The OS has the following structure:
@@ -161,7 +218,8 @@ ${JSON.stringify(systemStructure, null, 2)}
 
 User's customization request: "${prompt}"
 
-Reply with a detailed list of paths that need to be changed to fulfill this request. Be specific and include all relevant paths.`
+Reply with a detailed list of paths that need to be changed to fulfill this request. Be specific and include all relevant paths. 
+If the request involves generating or changing images (wallpapers, icons, etc.), set imageGeneration to true and provide detailed prompts.`
                     }
                 ];
             } else if (action === 'customize') {
@@ -172,16 +230,21 @@ Reply with a detailed list of paths that need to be changed to fulfill this requ
 Respond directly with JSON, following this schema, and no other text:
 {
   "changes": {
-    [path: string]: any  // e.g. "desktop.wallpaper": "assets/new-wallpaper.jpg"
+    [path: string]: any  // e.g. "desktop.wallpaper": "data:image/..."
   }
 }
 
 Current configuration:
 ${JSON.stringify(currentConfig, null, 2)}
 
+${generatedImages && Object.keys(generatedImages).length > 0 ? 
+  `Generated images available:
+${JSON.stringify(generatedImages, null, 2)}` : ''}
+
 User's customization request: "${prompt}"
 
-Reply with specific changes needed to fulfill this request. Provide exact values for each property that needs to be changed.`
+Reply with specific changes needed to fulfill this request. Provide exact values for each property that needs to be changed.
+If images were generated, use their URLs in the appropriate config paths.`
                     }
                 ];
             }
