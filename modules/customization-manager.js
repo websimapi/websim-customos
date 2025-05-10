@@ -138,6 +138,8 @@ export class CustomizationManager {
             // Skip if image doesn't need generation
             if (!prompt) continue;
             
+            console.log(`Generating image for ${key} with prompt:`, prompt.description);
+            
             // Generate images using the LLM image generation capability
             imageGenerationTasks.push(
                 websim.imageGen({
