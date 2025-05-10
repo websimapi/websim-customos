@@ -60,6 +60,19 @@ export function applyOverrides(config) {
             }
         }
         
+        // Ensure apps arrays remain arrays
+        if (config.apps) {
+            if (!Array.isArray(config.apps.installed)) {
+                console.error("Critical error: apps.installed is not an array after applying overrides. Resetting to empty array.");
+                config.apps.installed = [];
+            }
+            
+            if (!Array.isArray(config.apps.desktop)) {
+                console.error("Critical error: apps.desktop is not an array after applying overrides. Resetting to empty array.");
+                config.apps.desktop = [];
+            }
+        }
+        
         return config;
     } catch (error) {
         console.error('Error applying overrides:', error);
@@ -82,6 +95,14 @@ export function saveOverride(filename, path, value) {
         // Initialize file overrides if not exist
         if (!overrides[filename]) {
             overrides[filename] = {};
+        }
+        
+        // Protect critical arrays
+        if (filename === 'apps-config.json' && (path === 'installed' || path === 'desktop')) {
+            if (!Array.isArray(value)) {
+                console.error(`Cannot save override for ${path} with non-array value`);
+                return;
+            }
         }
         
         // Set the override
@@ -157,6 +178,14 @@ function getConfigSectionForFile(config, filename) {
  */
 function applyOverridesToSection(section, overrides) {
     for (const [path, value] of Object.entries(overrides)) {
+        // Protect critical arrays - if we're trying to set a non-array to an array property
+        if ((path === 'installed' || path === 'desktop') && section[path] && Array.isArray(section[path])) {
+            if (!Array.isArray(value)) {
+                console.error(`Skipping invalid override for ${path}: cannot replace array with non-array value`);
+                continue;
+            }
+        }
+        
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
             // Special handling for app arrays
             if (path === 'installed' || path === 'desktop') {

@@ -13,23 +13,69 @@ export async function sandboxTest(changes) {
         // Clone the current system configuration for testing
         const testSystem = await getClonedSystemConfig();
         
+        // Validate the changes format first
+        const changeValidation = preValidateChanges(changes);
+        if (!changeValidation.valid) {
+            return {
+                success: false,
+                error: changeValidation.error
+            };
+        }
+        
         // Apply changes to the test system
         for (const [path, value] of Object.entries(changes)) {
+            // Skip special app icon format paths - these are handled differently
+            if (path.includes('appIcon.')) {
+                continue;
+            }
+            
             const parts = path.split('.');
             let current = testSystem;
+            
+            // For paths with array indices, handle separately
+            if (path.includes('[') && path.includes(']')) {
+                applyArrayItemChange(testSystem, path, value);
+                continue;
+            }
             
             // Navigate to the object that contains the property to change
             for (let i = 0; i < parts.length - 1; i++) {
                 const part = parts[i];
-                if (current[part] === undefined) {
+                
+                // Skip if we're trying to navigate into something that's not an object
+                if (typeof current[part] !== 'object' || current[part] === null) {
                     current[part] = {};
                 }
+                
                 current = current[part];
             }
             
             // Set the new value
             const finalProp = parts[parts.length - 1];
             current[finalProp] = value;
+        }
+        
+        // Handle app icon changes
+        for (const [path, value] of Object.entries(changes)) {
+            if (path.includes('appIcon.')) {
+                const appId = path.split('.')[1];
+                
+                // Update in installed apps
+                if (testSystem.apps && Array.isArray(testSystem.apps.installed)) {
+                    const app = testSystem.apps.installed.find(a => a.id === appId);
+                    if (app) {
+                        app.icon = value;
+                    }
+                }
+                
+                // Update in desktop apps
+                if (testSystem.apps && Array.isArray(testSystem.apps.desktop)) {
+                    const app = testSystem.apps.desktop.find(a => a.id === appId);
+                    if (app) {
+                        app.icon = value;
+                    }
+                }
+            }
         }
         
         // Run validation tests on the modified system
@@ -52,6 +98,95 @@ export async function sandboxTest(changes) {
             success: false,
             error: `Sandbox test failed: ${error.message}`
         };
+    }
+}
+
+/**
+ * Pre-validates changes to catch obvious issues before attempting to apply them
+ * @param {Object} changes - The changes to validate
+ * @returns {Object} - Validation result
+ */
+function preValidateChanges(changes) {
+    try {
+        // Check that changes is an object
+        if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) {
+            return {
+                valid: false,
+                error: "Changes must be an object mapping paths to values"
+            };
+        }
+        
+        // Check for critical array replacements
+        for (const [path, value] of Object.entries(changes)) {
+            if ((path === 'apps.installed' || path === 'apps.desktop') && !Array.isArray(value)) {
+                return {
+                    valid: false,
+                    error: `Cannot replace ${path} with a non-array value`
+                };
+            }
+        }
+        
+        return { valid: true };
+    } catch (error) {
+        return {
+            valid: false,
+            error: `Pre-validation error: ${error.message}`
+        };
+    }
+}
+
+/**
+ * Applies a change to an item in an array
+ * @param {Object} system - The system object
+ * @param {string} path - The path to the array item (e.g., 'apps.installed[0].icon')
+ * @param {any} value - The new value to set
+ */
+function applyArrayItemChange(system, path, value) {
+    try {
+        // Parse the path to extract the array path, index, and property path
+        const match = path.match(/^(.+)\[(\d+)\]\.(.+)$/);
+        if (!match) return;
+        
+        const [_, arrayPath, indexStr, propPath] = match;
+        const index = parseInt(indexStr);
+        
+        // Navigate to the array
+        const parts = arrayPath.split('.');
+        let current = system;
+        
+        for (const part of parts) {
+            if (current[part] === undefined) {
+                current[part] = {};
+            }
+            current = current[part];
+        }
+        
+        // Ensure it's an array
+        if (!Array.isArray(current)) {
+            current = [];
+        }
+        
+        // Ensure the index exists
+        if (!current[index]) {
+            return; // Skip if index doesn't exist
+        }
+        
+        // Navigate to the property and set its value
+        const propParts = propPath.split('.');
+        let item = current[index];
+        
+        for (let i = 0; i < propParts.length - 1; i++) {
+            const part = propParts[i];
+            if (item[part] === undefined) {
+                item[part] = {};
+            }
+            item = item[part];
+        }
+        
+        const finalProp = propParts[propParts.length - 1];
+        item[finalProp] = value;
+    } catch (error) {
+        console.error('Error applying array item change:', error);
     }
 }
 
@@ -95,6 +230,15 @@ async function getClonedSystemConfig() {
         lockScreen: applyFileOverrides(configs[9], overrides['lockscreen-config.json'])
     };
     
+    // Ensure apps arrays are arrays
+    if (!Array.isArray(system.apps.installed)) {
+        system.apps.installed = [];
+    }
+    
+    if (!Array.isArray(system.apps.desktop)) {
+        system.apps.desktop = [];
+    }
+    
     return system;
 }
 
@@ -113,6 +257,27 @@ function applyFileOverrides(config, overrides) {
     
     // Apply each override
     for (const [path, value] of Object.entries(overrides)) {
+        // Protect arrays
+        if ((path === 'installed' || path === 'desktop') && 
+            Array.isArray(result[path]) && !Array.isArray(value)) {
+            console.error(`Skipping invalid override for ${path}: cannot replace array with non-array`);
+            continue;
+        }
+        
+        // Handle app ID-based overrides (for installed and desktop apps)
+        if (typeof value === 'object' && value !== null && !Array.isArray(value) &&
+            (path === 'installed' || path === 'desktop') && Array.isArray(result[path])) {
+            
+            // Each key in value is an app ID
+            for (const [appId, appOverrides] of Object.entries(value)) {
+                const app = result[path].find(a => a.id === appId);
+                if (app) {
+                    Object.assign(app, appOverrides);
+                }
+            }
+            continue;
+        }
+        
         const parts = path.split('.');
         let current = result;
         
@@ -188,7 +353,7 @@ function validateSystem(system) {
             };
         }
         
-        // Check apps array
+        // Check apps array - critical validation
         if (!Array.isArray(system.apps.installed)) {
             return {
                 valid: false,
@@ -196,7 +361,7 @@ function validateSystem(system) {
             };
         }
         
-        // Check desktop apps array
+        // Check desktop apps array - critical validation
         if (!Array.isArray(system.apps.desktop)) {
             return {
                 valid: false,
@@ -216,4 +381,3 @@ function validateSystem(system) {
         };
     }
 }
-

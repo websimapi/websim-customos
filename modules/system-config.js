@@ -19,6 +19,15 @@ export class SystemConfig {
             const startMenuConfig = await loadConfig('startmenu-config.json').catch(() => ({ categories: [] }));
             const lockScreenConfig = await loadConfig('lockscreen-config.json').catch(() => ({ wallpaper: 'assets/default-lockscreen.jpg' }));
             
+            // Ensure apps arrays are initialized properly
+            if (!appsConfig.desktop || !Array.isArray(appsConfig.desktop)) {
+                appsConfig.desktop = [];
+            }
+            
+            if (!appsConfig.installed || !Array.isArray(appsConfig.installed)) {
+                appsConfig.installed = [];
+            }
+            
             // Combine all configs into a single system object
             this.app.system = {
                 os: osConfig,
@@ -35,6 +44,17 @@ export class SystemConfig {
             
             // Apply any saved overrides from localStorage
             this.app.system = applyOverrides(this.app.system);
+            
+            // Final check to ensure critical arrays are still arrays
+            if (!Array.isArray(this.app.system.apps.installed)) {
+                console.error("Critical error: apps.installed is not an array after loading overrides. Resetting to empty array.");
+                this.app.system.apps.installed = [];
+            }
+            
+            if (!Array.isArray(this.app.system.apps.desktop)) {
+                console.error("Critical error: apps.desktop is not an array after loading overrides. Resetting to empty array.");
+                this.app.system.apps.desktop = [];
+            }
             
         } catch (error) {
             console.error('Error loading system configuration:', error);
