@@ -158,6 +158,22 @@ function getConfigSectionForFile(config, filename) {
 function applyOverridesToSection(section, overrides) {
     for (const [path, value] of Object.entries(overrides)) {
         if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+            // Special handling for app arrays
+            if (path === 'installed' || path === 'desktop') {
+                // Handle app overrides by ID
+                if (Array.isArray(section[path])) {
+                    for (const [appId, appOverrides] of Object.entries(value)) {
+                        // Find the app by ID in the array
+                        const app = section[path].find(a => a.id === appId);
+                        if (app) {
+                            // Apply the overrides to the app
+                            Object.assign(app, appOverrides);
+                        }
+                    }
+                }
+                continue;
+            }
+            
             // If value is an object, recursively apply overrides
             const nestedSection = getNestedProperty(section, path);
             if (nestedSection) {

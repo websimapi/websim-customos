@@ -49,6 +49,18 @@ export class CustomizationManager {
                 currentConfig[path] = this.getConfigByPath(path);
             }
             
+            // Add app information for app icon customization
+            if (this.app.customizationPrompt.toLowerCase().includes('icon') || 
+                this.app.customizationPrompt.toLowerCase().includes('app')) {
+                currentConfig.allApps = this.app.system.apps.installed.map(app => ({
+                    id: app.id,
+                    name: app.name,
+                    icon: app.icon,
+                    component: app.component,
+                    category: app.category
+                }));
+            }
+            
             // Generate customization
             const customizationResult = await this.callLLM({
                 prompt: this.app.customizationPrompt,
@@ -77,8 +89,6 @@ export class CustomizationManager {
                     imagesPreviews: this.generatedImages,
                     rebootRequired: true
                 };
-                
-                // No longer automatically reboot - let the user decide when to reboot
             } else {
                 throw new Error(`Couldn't apply changes: ${sandboxResult.error}`);
             }
@@ -134,8 +144,8 @@ export class CustomizationManager {
                 properties: Object.keys(this.app.system.desktop)
             },
             apps: {
-                desktop: this.app.system.apps.desktop.map(app => ({id: app.id, name: app.name})),
-                installed: this.app.system.apps.installed.map(app => ({id: app.id, name: app.name}))
+                desktop: this.app.system.apps.desktop.map(app => ({id: app.id, name: app.name, icon: app.icon})),
+                installed: this.app.system.apps.installed.map(app => ({id: app.id, name: app.name, icon: app.icon}))
             },
             taskbar: {
                 position: this.app.system.taskbar.position,
@@ -217,7 +227,10 @@ ${JSON.stringify(systemStructure, null, 2)}
 User's customization request: "${prompt}"
 
 Reply with a detailed list of paths that need to be changed to fulfill this request. Be specific and include all relevant paths. 
-If the request involves generating or changing images (wallpapers, icons, etc.), set imageGeneration to true and provide detailed prompts.`
+For app icon changes, use paths like "apps.installed.X" where X is the specific app that needs an icon change.
+If the request involves generating or changing images (wallpapers, icons, etc.), set imageGeneration to true and provide detailed prompts.
+
+For app icon changes, use "appIcon.X" as the key in imagePrompts where X is the app ID.`
                     }
                 ];
             } else if (action === 'customize') {
@@ -242,7 +255,13 @@ ${JSON.stringify(generatedImages, null, 2)}` : ''}
 User's customization request: "${prompt}"
 
 Reply with specific changes needed to fulfill this request. Provide exact values for each property that needs to be changed.
-If images were generated, use their URLs in the appropriate config paths.`
+If images were generated, use their URLs in the appropriate config paths.
+
+For app icon changes, you need to update the icon property for the specific app in both the 'installed' and 'desktop' arrays
+if the app appears in both. For example:
+1. Find the app by ID in apps.installed array
+2. Update its icon property with the new image URL
+3. Also check if it exists in apps.desktop array and update there too`
                     }
                 ];
             }
@@ -265,6 +284,15 @@ If images were generated, use their URLs in the appropriate config paths.`
     }
     
     getConfigByPath(path) {
+        // Special handling for app arrays
+        if (path.startsWith('apps.installed') || path.startsWith('apps.desktop')) {
+            const parts = path.split('.');
+            // Return the whole array for the LLM to process
+            if (parts.length === 2) {
+                return this.app.system[parts[0]][parts[1]];
+            }
+        }
+        
         const parts = path.split('.');
         let current = this.app.system;
         
@@ -281,6 +309,20 @@ If images were generated, use their URLs in the appropriate config paths.`
     applyCustomization(changes) {
         // First update the data model
         for (const [path, value] of Object.entries(changes)) {
+            // Handle special case for app icon updates
+            if (path.includes('appIcon.')) {
+                // Extract app ID from the path (e.g., "appIcon.terminal" -> "terminal")
+                const appId = path.split('.')[1];
+                this.updateAppIcon(appId, value);
+                continue;
+            }
+            
+            // Handle array item updates (for apps.installed[x].icon, etc.)
+            if (path.match(/apps\.(installed|desktop)\[\d+\]\./)) {
+                this.updateArrayItem(path, value);
+                continue;
+            }
+            
             const parts = path.split('.');
             let current = this.app.system;
             
@@ -300,11 +342,146 @@ If images were generated, use their URLs in the appropriate config paths.`
         
         // Then save overrides to localStorage
         for (const [path, value] of Object.entries(changes)) {
+            if (path.includes('appIcon.')) {
+                // This is handled separately
+                continue;
+            }
+            
+            if (path.match(/apps\.(installed|desktop)\[\d+\]\./)) {
+                // Handle array item paths differently
+                this.saveArrayItemOverride(path, value);
+                continue;
+            }
+            
             const configFile = this.getConfigFileForPath(path);
             if (configFile) {
                 const configPath = path.split('.').slice(1).join('.');
                 this.saveOverride(configFile, configPath, value);
             }
+        }
+    }
+    
+    updateAppIcon(appId, iconUrl) {
+        // Update icon in installed apps
+        const installedApp = this.app.system.apps.installed.find(app => app.id === appId);
+        if (installedApp) {
+            installedApp.icon = iconUrl;
+            
+            // Save to localStorage
+            this.saveAppIconOverride('installed', appId, iconUrl);
+        }
+        
+        // Update icon in desktop apps if present
+        const desktopApp = this.app.system.apps.desktop.find(app => app.id === appId);
+        if (desktopApp) {
+            desktopApp.icon = iconUrl;
+            
+            // Save to localStorage
+            this.saveAppIconOverride('desktop', appId, iconUrl);
+        }
+    }
+    
+    saveAppIconOverride(arrayName, appId, iconUrl) {
+        try {
+            const filename = 'apps-config.json';
+            const overridesJSON = localStorage.getItem('customos-overrides') || '{}';
+            const overrides = JSON.parse(overridesJSON);
+            
+            if (!overrides[filename]) {
+                overrides[filename] = {};
+            }
+            
+            // Find the app in the array
+            const appIndex = this.app.system.apps[arrayName].findIndex(app => app.id === appId);
+            if (appIndex !== -1) {
+                // Create the nested path if it doesn't exist
+                if (!overrides[filename][arrayName]) {
+                    overrides[filename][arrayName] = {};
+                }
+                
+                // Instead of using array index, we'll use a special format to identify by id
+                // This ensures the override works even if array order changes
+                overrides[filename][arrayName][appId] = { icon: iconUrl };
+            }
+            
+            localStorage.setItem('customos-overrides', JSON.stringify(overrides));
+            console.log(`Saved app icon override for ${appId} in ${arrayName}:`, iconUrl);
+        } catch (error) {
+            console.error('Error saving app icon override:', error);
+        }
+    }
+    
+    updateArrayItem(path, value) {
+        // Parse the path to extract array name, index, and property
+        // Format: apps.installed[0].icon
+        const match = path.match(/^(\w+)\.(\w+)\[(\d+)\]\.(.+)$/);
+        if (!match) return;
+        
+        const [_, objName, arrayName, indexStr, propPath] = match;
+        const index = parseInt(indexStr);
+        
+        if (this.app.system[objName] && 
+            this.app.system[objName][arrayName] && 
+            this.app.system[objName][arrayName][index]) {
+            
+            // Navigate to the property and set its value
+            const parts = propPath.split('.');
+            let current = this.app.system[objName][arrayName][index];
+            
+            for (let i = 0; i < parts.length - 1; i++) {
+                const part = parts[i];
+                if (current[part] === undefined) {
+                    current[part] = {};
+                }
+                current = current[part];
+            }
+            
+            const finalPart = parts[parts.length - 1];
+            current[finalPart] = value;
+        }
+    }
+    
+    saveArrayItemOverride(path, value) {
+        // Parse the path
+        const match = path.match(/^(\w+)\.(\w+)\[(\d+)\]\.(.+)$/);
+        if (!match) return;
+        
+        const [_, objName, arrayName, indexStr, propPath] = match;
+        const index = parseInt(indexStr);
+        
+        // Get the array item to find its ID
+        const item = this.app.system[objName][arrayName][index];
+        if (!item || !item.id) return;
+        
+        const itemId = item.id;
+        
+        try {
+            const filename = this.getConfigFileForPath(objName);
+            if (!filename) return;
+            
+            const overridesJSON = localStorage.getItem('customos-overrides') || '{}';
+            const overrides = JSON.parse(overridesJSON);
+            
+            if (!overrides[filename]) {
+                overrides[filename] = {};
+            }
+            
+            if (!overrides[filename][arrayName]) {
+                overrides[filename][arrayName] = {};
+            }
+            
+            // Store by ID instead of index
+            if (!overrides[filename][arrayName][itemId]) {
+                overrides[filename][arrayName][itemId] = {};
+            }
+            
+            // Set the property value
+            this.setNestedProperty(overrides[filename][arrayName][itemId], propPath, value);
+            
+            localStorage.setItem('customos-overrides', JSON.stringify(overrides));
+            console.log(`Saved array item override for ${itemId} in ${arrayName}.${propPath}:`, value);
+        } catch (error) {
+            console.error('Error saving array item override:', error);
         }
     }
     
