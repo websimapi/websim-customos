@@ -1,0 +1,42 @@
+/* Text Editor */
+.text-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.editor-toolbar {
+    display: flex;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+}
+
+.editor-toolbar button, .editor-toolbar select {
+    margin-right: 10px;
+    padding: 5px 10px;
+}
+
+.editor-area {
+    flex-grow: 1;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 16px;
+    border: none;
+    resize: none;
+}
+
+.editor-area:focus {
+    outline: none;
+}
+
+.editor-status {
+    padding: 5px 10px;
+    background-color: #f5f5f5;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #666;
+}
+

@@ -1,0 +1,144 @@
+/* Taskbar */
+.taskbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 48px;
+    background-color: rgba(25, 25, 25, 0.8);
+    display: flex;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+}
+
+.taskbar.top {
+    top: 0;
+    bottom: auto;
+}
+
+.taskbar.left {
+    width: 48px;
+    height: 100%;
+    flex-direction: column;
+}
+
+.taskbar.right {
+    width: 48px;
+    height: 100%;
+    right: 0;
+    left: auto;
+    flex-direction: column;
+}
+
+.start-button {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.start-button img {
+    width: 24px;
+    height: 24px;
+}
+
+.taskbar-items {
+    flex-grow: 1;
+    display: flex;
+    padding: 0 10px;
+    overflow-x: auto;
+    height: 100%;
+}
+
+.taskbar.left .taskbar-items,
+.taskbar.right .taskbar-items {
+    flex-direction: column;
+    width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.taskbar-item {
+    width: 40px;
+    height: 40px;
+    margin: 0 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    position: relative;
+}
+
+.taskbar-item:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.taskbar-item.active-app {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.taskbar-item.active-app::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 2px;
+    background-color: #fff;
+}
+
+.taskbar.left .taskbar-item.active-app::after,
+.taskbar.right .taskbar-item.active-app::after {
+    bottom: auto;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2px;
+    height: 20px;
+}
+
+.taskbar-icon {
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.system-tray {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    height: 100%;
+}
+
+.taskbar.left .system-tray,
+.taskbar.right .system-tray {
+    flex-direction: column;
+    width: 100%;
+    padding: 10px 0;
+}
+
+.time-display {
+    color: white;
+    font-size: 14px;
+    margin: 0 10px;
+}
+
+.system-tray-item {
+    width: 24px;
+    height: 24px;
+    margin: 0 4px;
+    cursor: pointer;
+}
+
+.system-tray-item img {
+    width: 100%;
+    height: 100%;
+}
+
