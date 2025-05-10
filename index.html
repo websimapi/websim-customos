@@ -58,7 +58,7 @@
                         </div>
                     </div>
                     <div class="window-content">
-                        <component :is="window.component" :data="window.data"></component>
+                        <component :is="appComponents[window.component]" :data="window.data"></component>
                     </div>
                     <div class="window-resize-handle" @mousedown="startResize(window.id, $event)"></div>
                 </div>
