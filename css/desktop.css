@@ -30,12 +30,6 @@
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* New style for selected desktop icon */
-.desktop-icon.selected-icon {
-    background-color: rgba(255, 255, 255, 0.25);
-    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5);
-}
-
 .icon-image {
     width: 48px;
     height: 48px;
@@ -52,3 +46,4 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
     word-break: break-word;
 }
+

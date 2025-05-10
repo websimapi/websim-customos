@@ -36,10 +36,7 @@
         <div v-else class="desktop" :style="{'background-image': `url(${system?.desktop?.wallpaper || 'assets/default-wallpaper.jpg'})`}">
             <!-- Desktop Icons -->
             <div class="desktop-icons">
-                <div v-for="app in system?.apps?.desktop || []" :key="app.id" class="desktop-icon" 
-                     @click="selectDesktopIcon(app, $event)" 
-                     @dblclick="launchDesktopApp(app)"
-                     :class="{'selected-icon': selectedDesktopIcon && selectedDesktopIcon.id === app.id}">
+                <div v-for="app in system?.apps?.desktop || []" :key="app.id" class="desktop-icon" @click="launchApp(app)">
                     <div class="icon-image" :style="{'background-image': `url(${app.icon})`}"></div>
                     <div class="icon-name">{{ app.name }}</div>
                 </div>

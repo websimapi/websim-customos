@@ -8,21 +8,28 @@ export class AppManager {
         return this.app.system.apps.installed.find(app => app.id === id) || null;
     }
     
-    launchApp(app) {
-        // Check if app is already open
-        const existingWindow = this.app.openWindows.find(w => w.appId === app.id);
-        if (existingWindow) {
-            // Bring existing window to front
-            this.app.windowManager.activateWindow(existingWindow.id);
+    launchApp(appInput) { 
+        const app = this.findAppById(appInput.id);
+        
+        if (!app) {
+            console.error(`AppManager: App with ID '${appInput.id}' not found in installed apps.`);
             return;
         }
         
-        // Create a new window for the app
+        const existingWindow = this.app.openWindows.find(w => w.appId === app.id);
+        if (existingWindow) {
+            this.app.windowManager.activateWindow(existingWindow.id);
+            if (existingWindow.minimized) {
+                existingWindow.minimized = false; 
+            }
+            return;
+        }
+        
         const windowId = this.app.windowManager.createWindow(
             app.id,
             app.name,
             app.icon,
-            app.component,
+            app.component, 
             app.defaultData || {}
         );
         
@@ -30,10 +37,8 @@ export class AppManager {
     }
     
     getTaskbarApps() {
-        // Get apps pinned to taskbar + open apps
         const pinnedApps = this.app.system?.taskbar?.pinnedApps || [];
         
-        // Combine pinned apps and open apps (without duplicates)
         return pinnedApps.map(id => {
             const app = this.findAppById(id);
             return app;

@@ -5,6 +5,7 @@
     left: 0;
     width: 100%;
     height: calc(100% - 48px); /* Adjust for taskbar */
+    pointer-events: none; /* Allow clicks to pass through to desktop icons */
 }
 
 .window {
@@ -16,6 +17,7 @@
     flex-direction: column;
     overflow: hidden;
     transition: box-shadow 0.2s;
+    pointer-events: auto; /* Windows themselves should be interactive */
 }
 
 .active-window {

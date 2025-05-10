@@ -42,8 +42,7 @@ const CustomOS = {
             customizationPrompt: '',
             customizationLoading: false,
             customizationResult: null,
-            appComponents: {},
-            selectedDesktopIcon: null // New property to track selected desktop icon
+            appComponents: {}
         };
     },
     computed: {
@@ -86,22 +85,6 @@ const CustomOS = {
         window.removeEventListener('keydown', this.handleGlobalKeydown);
     },
     methods: {
-        // New method to handle desktop icon selection
-        selectDesktopIcon(app, event) {
-            // Prevent double-click from triggering this twice
-            if (event) {
-                event.preventDefault();
-            }
-            
-            // Set the selected icon
-            this.selectedDesktopIcon = app;
-        },
-        
-        // New method to launch desktop app (on double-click)
-        launchDesktopApp(app) {
-            this.appManager.launchApp(app);
-        },
-        
         // Lock Screen Methods - Delegated to UIManager
         unlock() {
             this.uiManager.unlock();
@@ -205,15 +188,6 @@ const CustomOS = {
         
         // Global Event Handlers - Delegated to UIManager
         handleGlobalClick(event) {
-            // Clear desktop icon selection if clicking outside of desktop icons
-            if (this.selectedDesktopIcon) {
-                const desktopIconsEl = document.querySelector('.desktop-icons');
-                if (desktopIconsEl && !desktopIconsEl.contains(event.target)) {
-                    this.selectedDesktopIcon = null;
-                }
-            }
-            
-            // Existing handler logic
             this.uiManager.handleGlobalClick(event);
         },
         handleGlobalKeydown(event) {
