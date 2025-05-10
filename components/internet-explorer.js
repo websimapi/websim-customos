@@ -3,37 +3,36 @@ export const InternetExplorer = {
     props: ['data'],
     data() {
         return {
-            url: 'https://example.com',
+            url: '', 
             title: 'Internet Explorer',
             isLoading: false,
             history: [],
             historyIndex: -1,
             homePage: 'https://websim.ai',
             bookmarks: [],
-            inputUrl: 'https://example.com'
+            inputUrl: '' 
         };
     },
     mounted() {
-        this.navigate(this.url);
-        // Focus the address bar
+        this.navigate(this.homePage); 
+        this.inputUrl = this.homePage; 
+
         this.$nextTick(() => {
-            this.$refs.addressBar.select();
+            if (this.$refs.addressBar) {
+                 this.$refs.addressBar.select();
+            }
         });
     },
     methods: {
         navigate(url) {
-            // Validate URL format
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                // Add https:// prefix if missing
                 url = 'https://' + url;
                 this.inputUrl = url;
             }
             
             this.isLoading = true;
             
-            // Add to history
             if (this.url !== url) {
-                // If we navigated from history, truncate the forward history
                 if (this.historyIndex < this.history.length - 1) {
                     this.history = this.history.slice(0, this.historyIndex + 1);
                 }
@@ -45,7 +44,6 @@ export const InternetExplorer = {
             this.url = url;
             this.inputUrl = url;
             
-            // Some platforms block iframe navigation, so handle errors
             setTimeout(() => {
                 this.isLoading = false;
             }, 1000);
@@ -74,7 +72,6 @@ export const InternetExplorer = {
         refresh() {
             this.isLoading = true;
             
-            // Reloading iframe by temporarily clearing the URL
             const currentUrl = this.url;
             this.url = '';
             
@@ -97,7 +94,6 @@ export const InternetExplorer = {
         handleIframeLoad() {
             this.isLoading = false;
             try {
-                // Attempt to get the title from the iframe
                 const iframeDoc = this.$refs.webFrame.contentDocument;
                 if (iframeDoc && iframeDoc.title) {
                     this.title = iframeDoc.title + ' - Internet Explorer';
@@ -105,12 +101,10 @@ export const InternetExplorer = {
                     this.title = 'Internet Explorer';
                 }
             } catch (e) {
-                // Security restrictions may prevent accessing iframe content
                 this.title = 'Internet Explorer';
             }
         },
         
-        // Updates the window title (for the parent window manager)
         updateWindowTitle() {
             const window = this.findParentWindow();
             if (window && window.updateTitle) {
