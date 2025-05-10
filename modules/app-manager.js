@@ -9,8 +9,21 @@ export class AppManager {
     }
     
     launchApp(app) {
+        // If the app doesn't have component info (which desktop icons don't), 
+        // find the full app definition from installed apps
+        let appToLaunch = app;
+        if (!app.component) {
+            const installedApp = this.findAppById(app.id);
+            if (installedApp) {
+                appToLaunch = installedApp; // Use the full app definition from installed apps
+            } else {
+                console.error(`Cannot launch app ${app.id}: not found in installed apps`);
+                return;
+            }
+        }
+        
         // Check if app is already open
-        const existingWindow = this.app.openWindows.find(w => w.appId === app.id);
+        const existingWindow = this.app.openWindows.find(w => w.appId === appToLaunch.id);
         if (existingWindow) {
             // Bring existing window to front
             this.app.windowManager.activateWindow(existingWindow.id);
@@ -19,11 +32,11 @@ export class AppManager {
         
         // Create a new window for the app
         const windowId = this.app.windowManager.createWindow(
-            app.id,
-            app.name,
-            app.icon,
-            app.component,
-            app.defaultData || {}
+            appToLaunch.id,
+            appToLaunch.name,
+            appToLaunch.icon,
+            appToLaunch.component,
+            appToLaunch.defaultData || {}
         );
         
         this.app.windowManager.activateWindow(windowId);
