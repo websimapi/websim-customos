@@ -308,6 +308,11 @@
                         <p><strong>Changes applied:</strong></p>
                         <pre>{{ JSON.stringify(customizationResult.changes, null, 2) }}</pre>
                     </div>
+                    <button v-if="customizationResult.rebootRequired" 
+                            @click="rebootSystem" 
+                            class="reboot-button">
+                        Reboot Now
+                    </button>
                 </div>
                 <div v-else class="result-error">
                     <p><strong>Error:</strong> {{ customizationResult.error }}</p>

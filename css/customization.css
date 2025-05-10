@@ -370,6 +370,22 @@
     border-left: 4px solid #2e7d32;
 }
 
+.reboot-button {
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #0078d7;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: bold;
+}
+
+.reboot-button:hover {
+    background-color: #0067b8;
+}
+
 .result-error {
     background-color: #ffebee;
     color: #c62828;

@@ -64,9 +64,6 @@ export const CustomizationApp = {
                         this.imagePreviewUrl = result.imagesPreviews[imageKey];
                         this.imagePreviewType = imageKey;
                     }
-                    
-                    // Don't clear the input yet - user might want to see what they requested
-                    // after the OS reloads
                 }
                 
             } catch (error) {
@@ -103,14 +100,11 @@ export const CustomizationApp = {
                 
                 this.customizationResult = {
                     success: true,
-                    message: "All customizations have been reset to default. Reloading..."
+                    message: "All customizations have been reset to default. A reboot is required to apply changes.",
+                    rebootRequired: true
                 };
                 
-                // Reload the page after a brief delay to show the success message
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-                
+                // Don't automatically reload - wait for user to confirm
             } catch (error) {
                 console.error('Error resetting customizations:', error);
                 this.customizationResult = {
@@ -118,6 +112,10 @@ export const CustomizationApp = {
                     error: 'Error resetting customizations: ' + error.message
                 };
             }
+        },
+        
+        rebootSystem() {
+            window.location.reload();
         },
         
         useExample(example) {

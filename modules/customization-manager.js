@@ -72,15 +72,13 @@ export class CustomizationManager {
                 
                 this.app.customizationResult = {
                     success: true,
-                    message: "Your customization has been applied successfully! The OS will reload to apply changes.",
+                    message: "Your customization has been applied successfully! A reboot is required to see the changes.",
                     changes: customizationResult.changes,
-                    imagesPreviews: this.generatedImages
+                    imagesPreviews: this.generatedImages,
+                    rebootRequired: true
                 };
                 
-                // Schedule a reload after showing success message
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                // No longer automatically reboot - let the user decide when to reboot
             } else {
                 throw new Error(`Couldn't apply changes: ${sandboxResult.error}`);
             }
@@ -375,5 +373,10 @@ If images were generated, use their URLs in the appropriate config paths.`
         this.app.customizationPrompt = this.lastCustomizationPrompt;
         this.app.customizationResult = null;
         this.processCustomization();
+    }
+    
+    rebootSystem() {
+        // Method to reboot the system when the user confirms
+        window.location.reload();
     }
 }
