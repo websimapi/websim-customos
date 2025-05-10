@@ -1,8 +1,6 @@
 export class UIManager {
     constructor(app) {
         this.app = app;
-        // Add a property to track selected desktop icon
-        this.app.selectedDesktopIcon = null;
     }
     
     initClock() {
@@ -161,24 +159,6 @@ export class UIManager {
         }
     }
     
-    // Add method to handle desktop icon selection
-    selectDesktopIcon(app) {
-        if (this.app.selectedDesktopIcon === app.id) {
-            this.app.selectedDesktopIcon = null;
-        } else {
-            this.app.selectedDesktopIcon = app.id;
-        }
-    }
-    
-    // Add a method to handle clicks outside desktop icons to clear selection
-    handleDesktopClick(event) {
-        // If we clicked directly on the desktop (not on an icon)
-        if (event.target.classList.contains('desktop') || 
-            event.target.classList.contains('desktop-icons')) {
-            this.app.selectedDesktopIcon = null;
-        }
-    }
-    
     // Settings
     openSettings() {
         const settingsApp = this.app.appManager.findAppById('settings');
@@ -206,12 +186,6 @@ export class UIManager {
             if (powerMenu && !powerMenu.contains(event.target)) {
                 this.closePowerOptions();
             }
-        }
-        
-        // Handle desktop clicks
-        if (this.app.selectedDesktopIcon && 
-            !event.target.closest('.desktop-icon')) {
-            this.app.selectedDesktopIcon = null;
         }
     }
     
