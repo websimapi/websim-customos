@@ -1,0 +1,17 @@
+{
+    "position": "bottom",
+    "startButtonIcon": "assets/start-icon.png",
+    "pinnedApps": ["file-explorer", "settings", "terminal"],
+    "showClock": true,
+    "showDate": false,
+    "autoHide": false,
+    "opacity": 0.9,
+    "size": "medium",
+    "systemTray": [
+        { "id": "wifi", "name": "Wi-Fi", "icon": "assets/wifi-icon.png" },
+        { "id": "volume", "name": "Volume", "icon": "assets/volume-icon.png" },
+        { "id": "battery", "name": "Battery", "icon": "assets/battery-icon.png" },
+        { "id": "notifications", "name": "Notifications", "icon": "assets/notification-icon.png" }
+    ]
+}
+

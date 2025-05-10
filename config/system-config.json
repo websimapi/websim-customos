@@ -1,0 +1,24 @@
+{
+    "language": "en",
+    "timeFormat": "12h",
+    "dateFormat": "MM/DD/YYYY",
+    "animations": true,
+    "soundEffects": true,
+    "performance": {
+        "powerMode": "balanced",
+        "backgroundAppRefresh": true,
+        "hardwareAcceleration": true
+    },
+    "accessibility": {
+        "highContrast": false,
+        "largeText": false,
+        "screenReader": false,
+        "reducedMotion": false
+    },
+    "storage": {
+        "cacheLimit": 100,
+        "temporaryFileRetentionDays": 7,
+        "autoCleanup": true
+    }
+}
+

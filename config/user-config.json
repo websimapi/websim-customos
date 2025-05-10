@@ -1,0 +1,17 @@
+{
+    "name": "User",
+    "username": "user",
+    "avatar": "assets/default-avatar.png",
+    "email": "user@example.com",
+    "preferences": {
+        "theme": "system",
+        "colorScheme": "blue",
+        "notifications": "all",
+        "privacy": {
+            "shareUsageData": false,
+            "storeBrowsingHistory": true
+        }
+    },
+    "contacts": []
+}
+

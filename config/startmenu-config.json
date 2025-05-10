@@ -1,0 +1,14 @@
+{
+    "layout": "default",
+    "showRecentApps": true,
+    "showRecentFiles": true,
+    "showAllApps": true,
+    "categories": [
+        { "id": "productivity", "name": "Productivity", "icon": "assets/productivity-icon.png" },
+        { "id": "utilities", "name": "Utilities", "icon": "assets/utilities-icon.png" },
+        { "id": "system", "name": "System", "icon": "assets/system-icon.png" }
+    ],
+    "featuredApps": ["file-explorer", "terminal", "text-editor"],
+    "searchEnabled": true
+}
+

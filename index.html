@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CustomOS</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+    {
+        "imports": {
+            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="custom-os">
+        <!-- Loading Screen -->
+        <div v-if="loading" class="loading-screen">
+            <div class="spinner"></div>
+            <div class="loading-text">{{ system.os.name }} is starting...</div>
+            <div class="version">Version {{ system.os.version }}</div>
+        </div>
+
+        <!-- Lock Screen -->
+        <div v-else-if="lockScreen" class="lock-screen" :style="{'background-image': `url(${system.lockScreen.wallpaper})`}">
+            <div class="time">{{ currentTime }}</div>
+            <div class="date">{{ currentDate }}</div>
+            <div class="unlock-container">
+                <input v-if="system.security.passwordEnabled" type="password" v-model="password" @keyup.enter="unlock" placeholder="Enter password">
+                <button @click="unlock" class="unlock-btn">Unlock</button>
+            </div>
+        </div>
+
+        <!-- Desktop -->
+        <div v-else class="desktop" :style="{'background-image': `url(${system.desktop.wallpaper})`}">
+            <!-- Desktop Icons -->
+            <div class="desktop-icons">
+                <div v-for="app in system.apps.desktop" :key="app.id" class="desktop-icon" @click="launchApp(app)">
+                    <div class="icon-image" :style="{'background-image': `url(${app.icon})`}"></div>
+                    <div class="icon-name">{{ app.name }}</div>
+                </div>
+            </div>
+            
+            <!-- Windows Area -->
+            <div class="windows-area">
+                <div v-for="window in openWindows" :key="window.id" class="window" 
+                     :style="{top: window.position.y + 'px', left: window.position.x + 'px', 
+                             width: window.size.width + 'px', height: window.size.height + 'px',
+                             zIndex: window.zIndex}" 
+                     :class="{'active-window': window.id === activeWindowId}">
+                    <div class="window-titlebar" @mousedown="startDrag(window.id, $event)">
+                        <div class="window-title">{{ window.title }}</div>
+                        <div class="window-controls">
+                            <button class="minimize-btn" @click="minimizeWindow(window.id)">-</button>
+                            <button class="maximize-btn" @click="maximizeWindow(window.id)">□</button>
+                            <button class="close-btn" @click="closeWindow(window.id)">×</button>
+                        </div>
+                    </div>
+                    <div class="window-content">
+                        <component :is="window.component" :data="window.data"></component>
+                    </div>
+                    <div class="window-resize-handle" @mousedown="startResize(window.id, $event)"></div>
+                </div>
+            </div>
+            
+            <!-- Taskbar -->
+            <div class="taskbar" :class="system.taskbar.position">
+                <div class="start-button" @click="toggleStartMenu">
+                    <img :src="system.taskbar.startButtonIcon" alt="Start">
+                </div>
+                <div class="taskbar-items">
+                    <div v-for="app in taskbarApps" :key="app.id" class="taskbar-item" 
+                         @click="taskbarItemClick(app)" :class="{'active-app': isAppActive(app.id)}">
+                        <div class="taskbar-icon" :style="{'background-image': `url(${app.icon})`}"></div>
+                    </div>
+                </div>
+                <div class="system-tray">
+                    <div class="time-display">{{ currentTime }}</div>
+                    <div v-for="item in system.taskbar.systemTray" :key="item.id" class="system-tray-item" 
+                         @click="systemTrayItemClick(item)">
+                        <img :src="item.icon" :alt="item.name">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Start Menu -->
+            <div v-if="startMenuOpen" class="start-menu" :class="getStartMenuPosition()">
+                <div class="user-profile">
+                    <img :src="system.user.avatar" alt="User Avatar">
+                    <div class="user-name">{{ system.user.name }}</div>
+                </div>
+                <div class="start-menu-apps">
+                    <div v-for="appCategory in system.startMenu.categories" :key="appCategory.id" class="app-category">
+                        <div class="category-title">{{ appCategory.name }}</div>
+                        <div class="category-apps">
+                            <div v-for="app in getAppsByCategory(appCategory.id)" :key="app.id" class="start-menu-app" 
+                                 @click="launchApp(app); closeStartMenu()">
+                                <div class="app-icon" :style="{'background-image': `url(${app.icon})`}"></div>
+                                <div class="app-name">{{ app.name }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="start-menu-footer">
+                    <button @click="openSettings">Settings</button>
+                    <button @click="togglePowerOptions">Power</button>
+                </div>
+            </div>
+            
+            <!-- Power Options Menu -->
+            <div v-if="powerOptionsOpen" class="power-options-menu" :class="getStartMenuPosition()">
+                <button @click="shutDown">Shut Down</button>
+                <button @click="restart">Restart</button>
+                <button @click="sleep">Sleep</button>
+                <button @click="lock">Lock</button>
+            </div>
+            
+            <!-- Notifications Panel -->
+            <div v-if="notificationsPanelOpen" class="notifications-panel">
+                <div class="notifications-header">
+                    <div class="title">Notifications</div>
+                    <button class="clear-all" @click="clearAllNotifications">Clear All</button>
+                </div>
+                <div class="notifications-list">
+                    <div v-for="notification in system.notifications.items" :key="notification.id" class="notification-item">
+                        <div class="notification-icon" :style="{'background-image': `url(${notification.icon})`}"></div>
+                        <div class="notification-content">
+                            <div class="notification-title">{{ notification.title }}</div>
+                            <div class="notification-message">{{ notification.message }}</div>
+                            <div class="notification-time">{{ formatNotificationTime(notification.time) }}</div>
+                        </div>
+                        <button class="close-notification" @click="dismissNotification(notification.id)">×</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Customization Interface -->
+            <div v-if="customizationMode" class="customization-interface">
+                <div class="customization-panel">
+                    <h2>Customize Your OS</h2>
+                    <div class="customization-input">
+                        <textarea v-model="customizationPrompt" placeholder="Describe the changes you want to make to your OS..."></textarea>
+                        <div class="customization-actions">
+                            <button @click="processCustomization">Apply Changes</button>
+                            <button @click="cancelCustomization">Cancel</button>
+                        </div>
+                    </div>
+                    <div v-if="customizationLoading" class="customization-loading">
+                        <div class="spinner"></div>
+                        <div>Processing your customization request...</div>
+                    </div>
+                    <div v-if="customizationResult" class="customization-result">
+                        <div v-if="customizationResult.success" class="success-message">
+                            <p>✅ Customization applied successfully!</p>
+                        </div>
+                        <div v-else class="error-message">
+                            <p>❌ Error applying customization:</p>
+                            <pre>{{ customizationResult.error }}</pre>
+                            <button @click="retryCustomization">Retry</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Templates -->
+    <script type="text/x-template" id="file-explorer-template">
+        <div class="file-explorer">
+            <div class="folder-navigation">
+                <button @click="navigateUp">⬆ Up</button>
+                <div class="current-path">{{ currentPath }}</div>
+            </div>
+            <div class="files-container">
+                <div v-for="item in currentItems" :key="item.path" class="file-item" 
+                     @dblclick="handleItemOpen(item)" @click="selectItem(item)"
+                     :class="{'selected': selectedItem === item}">
+                    <div class="file-icon" :class="item.type"></div>
+                    <div class="file-name">{{ item.name }}</div>
+                </div>
+            </div>
+            <div class="file-details">
+                <div v-if="selectedItem" class="item-details">
+                    <div>Name: {{ selectedItem.name }}</div>
+                    <div>Type: {{ selectedItem.type }}</div>
+                    <div>Size: {{ formatSize(selectedItem.size) }}</div>
+                    <div>Modified: {{ formatDate(selectedItem.modified) }}</div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="settings-app-template">
+        <div class="settings-app">
+            <div class="settings-sidebar">
+                <div v-for="category in settingsCategories" :key="category.id"
+                     class="settings-category" :class="{'active': activeCategory === category.id}"
+                     @click="activeCategory = category.id">
+                    <div class="category-icon" :style="{'background-image': `url(${category.icon})`}"></div>
+                    <div class="category-name">{{ category.name }}</div>
+                </div>
+            </div>
+            <div class="settings-content">
+                <component :is="'settings-' + activeCategory" :settings="settings" @update:settings="updateSettings"></component>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="terminal-app-template">
+        <div class="terminal-app">
+            <div class="terminal-output">
+                <div v-for="(line, index) in terminalOutput" :key="index" class="terminal-line">
+                    <span v-html="line"></span>
+                </div>
+            </div>
+            <div class="terminal-input-line">
+                <span class="terminal-prompt">{{ terminalPrompt }}</span>
+                <input ref="terminalInput" v-model="terminalCommand" @keyup.enter="executeCommand" type="text" class="terminal-input">
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="text-editor-template">
+        <div class="text-editor">
+            <div class="editor-toolbar">
+                <button @click="saveFile">Save</button>
+                <button @click="openFile">Open</button>
+                <select v-model="fontSize">
+                    <option v-for="size in [8, 10, 12, 14, 16, 18, 20, 24]" :value="size">{{ size }}px</option>
+                </select>
+                <select v-model="fontFamily">
+                    <option value="monospace">Monospace</option>
+                    <option value="sans-serif">Sans-serif</option>
+                    <option value="serif">Serif</option>
+                </select>
+            </div>
+            <textarea ref="editorArea" v-model="content" :style="{fontSize: fontSize + 'px', fontFamily}" class="editor-area"></textarea>
+            <div class="editor-status">
+                <span>{{ fileName || 'Untitled' }}</span>
+                <span>{{ getCursorPosition() }}</span>
+            </div>
+        </div>
+    </script>
+
+    <script type="text/x-template" id="customization-app-template">
+        <div class="customization-app">
+            <h1>OS Customization Center</h1>
+            <p>Tell the AI how you'd like to customize your OS. You can change themes, layouts, features, and more.</p>
+            <textarea v-model="customizationPrompt" placeholder="Describe your desired customizations here..."></textarea>
+            <div class="button-row">
+                <button @click="applyCustomization" :disabled="customizationLoading">Apply Customization</button>
+                <button @click="resetCustomization">Reset to Default</button>
+            </div>
+            <div v-if="customizationLoading" class="loading-indicator">
+                <div class="spinner"></div>
+                <p>Processing customization request...</p>
+            </div>
+            <div v-if="customizationResult" class="result-section">
+                <h3>Customization Result</h3>
+                <pre>{{ JSON.stringify(customizationResult, null, 2) }}</pre>
+            </div>
+        </div>
+    </script>
+
+    <script src="app.js" type="module"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+

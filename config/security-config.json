@@ -1,0 +1,13 @@
+{
+    "passwordEnabled": false,
+    "password": "",
+    "lockOnStartup": false,
+    "autoLockAfterMinutes": 0,
+    "showPasswordHints": true,
+    "showLoginHistory": true,
+    "requirePasswordForApps": false,
+    "biometricEnabled": false,
+    "twoFactorEnabled": false,
+    "securityQuestions": []
+}
+

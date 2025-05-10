@@ -1,0 +1,11 @@
+{
+    "wallpaper": "assets/default-lockscreen.jpg",
+    "showTime": true,
+    "showDate": true,
+    "showNotifications": true,
+    "showQuickActions": true,
+    "quickActions": ["wifi", "bluetooth", "volume", "brightness"],
+    "clockStyle": "large",
+    "weatherEnabled": false
+}
+

@@ -1,0 +1,21 @@
+{
+    "position": "right",
+    "sound": true,
+    "doNotDisturb": false,
+    "showOnLockScreen": true,
+    "groupingEnabled": true,
+    "detailLevel": "all",
+    "duration": 5000,
+    "items": [
+        {
+            "id": "welcome",
+            "title": "Welcome to CustomOS",
+            "message": "Welcome to your new operating system! Click Customize OS to personalize your experience.",
+            "icon": "assets/notification-icon.png",
+            "time": 1688083200000,
+            "read": false,
+            "app": "system"
+        }
+    ]
+}
+

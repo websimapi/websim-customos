@@ -1,0 +1,23 @@
+{
+    "wallpaper": "assets/default-wallpaper.jpg",
+    "theme": "default",
+    "iconSize": "medium",
+    "iconSpacing": "medium",
+    "iconAlignment": "grid",
+    "showDesktopIcons": true,
+    "cornerRadius": 8,
+    "animation": {
+        "enabled": true,
+        "speed": "normal"
+    },
+    "transparency": {
+        "enabled": true,
+        "level": 0.8
+    },
+    "contextMenu": {
+        "showViewOptions": true,
+        "showSortOptions": true,
+        "allowCustomization": true
+    }
+}
+

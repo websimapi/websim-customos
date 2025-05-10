@@ -1,0 +1,11 @@
+{
+    "name": "CustomOS",
+    "version": "1.0.0",
+    "buildDate": "2023-07-01",
+    "buildId": "dev-20230701",
+    "copyright": "© 2023 CustomOS",
+    "kernelVersion": "1.0.0",
+    "architecture": "web-based",
+    "platform": "browser"
+}
+

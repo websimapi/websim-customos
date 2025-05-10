@@ -1,0 +1,50 @@
+{
+    "desktop": [
+        { "id": "file-explorer", "name": "Files", "icon": "assets/file-explorer-icon.png" },
+        { "id": "settings", "name": "Settings", "icon": "assets/settings-icon.png" },
+        { "id": "customization", "name": "Customize OS", "icon": "assets/customize-icon.png" }
+    ],
+    "installed": [
+        { 
+            "id": "file-explorer", 
+            "name": "Files", 
+            "icon": "assets/file-explorer-icon.png", 
+            "component": "file-explorer",
+            "category": "system",
+            "defaultData": {}
+        },
+        { 
+            "id": "settings", 
+            "name": "Settings", 
+            "icon": "assets/settings-icon.png", 
+            "component": "settings-app",
+            "category": "system",
+            "defaultData": {}
+        },
+        { 
+            "id": "terminal", 
+            "name": "Terminal", 
+            "icon": "assets/terminal-icon.png", 
+            "component": "terminal",
+            "category": "utilities",
+            "defaultData": {}
+        },
+        { 
+            "id": "text-editor", 
+            "name": "Text Editor", 
+            "icon": "assets/text-editor-icon.png", 
+            "component": "text-editor",
+            "category": "productivity",
+            "defaultData": {}
+        },
+        { 
+            "id": "customization", 
+            "name": "Customize OS", 
+            "icon": "assets/customize-icon.png", 
+            "component": "customization-app",
+            "category": "system",
+            "defaultData": {}
+        }
+    ]
+}
+
