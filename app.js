@@ -42,7 +42,8 @@ const CustomOS = {
             customizationPrompt: '',
             customizationLoading: false,
             customizationResult: null,
-            appComponents: {}
+            appComponents: {},
+            selectedDesktopIcon: null,
         };
     },
     computed: {
@@ -207,9 +208,53 @@ const CustomOS = {
         },
         retryCustomization() {
             this.customizationManager.retryCustomization();
+        },
+        selectDesktopIcon(app) {
+            this.uiManager.selectDesktopIcon(app);
         }
     }
 };
+
+export class AppManager {
+    constructor(app) {
+        this.app = app;
+    }
+    
+    findAppById(id) {
+        return this.app.system.apps.installed.find(app => app.id === id);
+    }
+    
+    launchApp(app) {
+        console.log("Launching app:", app.id);
+        
+        // Check if app is already open
+        const existingWindow = this.app.openWindows.find(w => w.appId === app.id);
+        if (existingWindow) {
+            // Bring existing window to front
+            this.app.windowManager.activateWindow(existingWindow.id);
+            return;
+        }
+        
+        // Create a new window for the app
+        const windowId = this.app.windowManager.createWindow(
+            app.id,
+            app.name,
+            app.icon,
+            app.component,
+            app.defaultData || {}
+        );
+        
+        this.app.windowManager.activateWindow(windowId);
+    }
+    
+    getTaskbarApps() {
+        return this.app.system.apps.desktop;
+    }
+    
+    getAppsByCategory(categoryId) {
+        return this.app.system.startMenu.categories.find(category => category.id === categoryId).apps;
+    }
+}
 
 // Create the Vue app when the DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
