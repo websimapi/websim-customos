@@ -246,19 +246,77 @@
     <script type="text/x-template" id="customization-app-template">
         <div class="customization-app">
             <h1>OS Customization Center</h1>
-            <p>Tell the AI how you'd like to customize your OS. You can change themes, layouts, features, and more.</p>
-            <textarea v-model="customizationPrompt" placeholder="Describe your desired customizations here..."></textarea>
+            <p>Tell the AI how you'd like to customize your OS. You can change themes, layouts, features, and more. Your changes will be saved automatically.</p>
+            
+            <div class="examples-section">
+                <h3>Examples you can try:</h3>
+                <div class="example-chips">
+                    <div v-for="example in examples" :key="example" class="example-chip" @click="useExample(example)">
+                        {{ example }}
+                    </div>
+                </div>
+            </div>
+            
+            <div v-if="recentCustomizations.length > 0" class="recent-customizations">
+                <h3>
+                    Recent customizations 
+                    <button class="clear-recent" @click="clearRecentCustomizations">Clear</button>
+                </h3>
+                <div class="recent-list">
+                    <div v-for="(customization, index) in recentCustomizations" 
+                         :key="index" 
+                         class="recent-item" 
+                         @click="useRecentCustomization(customization)">
+                        {{ customization }}
+                    </div>
+                </div>
+            </div>
+            
+            <textarea v-model="customizationPrompt" 
+                      placeholder="Describe your desired customizations here... (e.g., 'Change the desktop wallpaper to a beach scene and make the taskbar transparent')"
+                      @keyup.ctrl.enter="applyCustomization"></textarea>
+                      
             <div class="button-row">
-                <button @click="applyCustomization" :disabled="customizationLoading">Apply Customization</button>
+                <button @click="applyCustomization" :disabled="customizationLoading || !customizationPrompt.trim()">
+                    {{ customizationLoading ? 'Applying...' : 'Apply Customization' }}
+                </button>
                 <button @click="resetCustomization">Reset to Default</button>
             </div>
+            
             <div v-if="customizationLoading" class="loading-indicator">
                 <div class="spinner"></div>
-                <p>Processing customization request...</p>
+                <p>Processing your customization request. This may take a moment...</p>
             </div>
+            
             <div v-if="customizationResult" class="result-section">
                 <h3>Customization Result</h3>
-                <pre>{{ JSON.stringify(customizationResult, null, 2) }}</pre>
+                <div v-if="customizationResult.success" class="result-success">
+                    <p>{{ customizationResult.message }}</p>
+                    <div v-if="customizationResult.changes">
+                        <p><strong>Changes applied:</strong></p>
+                        <pre>{{ JSON.stringify(customizationResult.changes, null, 2) }}</pre>
+                    </div>
+                </div>
+                <div v-else class="result-error">
+                    <p><strong>Error:</strong> {{ customizationResult.error }}</p>
+                    <button @click="applyCustomization">Try Again</button>
+                </div>
+            </div>
+            
+            <div class="customization-hint">
+                <h4>What can you customize?</h4>
+                <p>Here are some ideas for customizations you can request:</p>
+                <ul>
+                    <li>Change desktop wallpaper or theme</li>
+                    <li>Modify taskbar appearance or position</li>
+                    <li>Add/remove/rearrange desktop icons</li>
+                    <li>Change system colors or fonts</li>
+                    <li>Update user profile information</li>
+                    <li>Configure lock screen settings</li>
+                    <li>Adjust system time format or language</li>
+                    <li>Modify notification settings</li>
+                </ul>
+                <p>Use natural language to describe what you want, and the AI will try to implement it!</p>
             </div>
         </div>
     </script>

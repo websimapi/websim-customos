@@ -198,8 +198,9 @@ const CustomOS = {
         toggleCustomizationMode() {
             this.customizationManager.toggleCustomizationMode();
         },
-        processCustomization() {
-            this.customizationManager.processCustomization();
+        async processCustomization() {
+            await this.customizationManager.processCustomization();
+            return this.customizationResult;
         },
         cancelCustomization() {
             this.customizationManager.cancelCustomization();

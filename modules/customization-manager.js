@@ -3,11 +3,11 @@ import { sandboxTest } from '../sandbox.js';
 export class CustomizationManager {
     constructor(app) {
         this.app = app;
+        this.lastCustomizationPrompt = '';
     }
     
     toggleCustomizationMode() {
         this.app.customizationMode = !this.app.customizationMode;
-        this.app.customizationPrompt = '';
         this.app.customizationResult = null;
     }
     
@@ -16,6 +16,7 @@ export class CustomizationManager {
         
         this.app.customizationLoading = true;
         this.app.customizationResult = null;
+        this.lastCustomizationPrompt = this.app.customizationPrompt;
         
         try {
             // Step 1: Determine which part of the OS to customize
@@ -26,10 +27,12 @@ export class CustomizationManager {
                 action: 'identify'
             });
             
+            console.log('Identified affected paths:', identifyRequest.affectedPaths);
+            
             // Step 2: Generate the actual customization
             const affectedPaths = identifyRequest.affectedPaths || [];
             if (affectedPaths.length === 0) {
-                throw new Error("I couldn't determine which part of the OS to customize. Please provide more details.");
+                throw new Error("I couldn't determine which parts of the OS to customize. Please provide more specific details about what you'd like to change.");
             }
             
             // Get the current configuration for affected paths
@@ -45,6 +48,12 @@ export class CustomizationManager {
                 action: 'customize'
             });
             
+            if (!customizationResult.changes || Object.keys(customizationResult.changes).length === 0) {
+                throw new Error("I couldn't generate valid changes based on your request. Please try again with more specific instructions.");
+            }
+            
+            console.log('Generated changes:', customizationResult.changes);
+            
             // Test the changes in a sandbox
             const sandboxResult = await sandboxTest(customizationResult.changes);
             
@@ -54,16 +63,17 @@ export class CustomizationManager {
                 
                 this.app.customizationResult = {
                     success: true,
-                    message: "Customization applied successfully!"
+                    message: "Your customization has been applied successfully!",
+                    changes: customizationResult.changes
                 };
             } else {
-                throw new Error(`Sandbox test failed: ${sandboxResult.error}`);
+                throw new Error(`Couldn't apply changes: ${sandboxResult.error}`);
             }
         } catch (error) {
             console.error('Customization error:', error);
             this.app.customizationResult = {
                 success: false,
-                error: error.message
+                error: error.message || "An unknown error occurred"
             };
         } finally {
             this.app.customizationLoading = false;
@@ -73,27 +83,49 @@ export class CustomizationManager {
     getSystemStructure() {
         // Generate a description of the system structure to help the LLM identify which parts to change
         return {
-            os: Object.keys(this.app.system.os),
-            desktop: Object.keys(this.app.system.desktop),
+            os: {
+                name: this.app.system.os.name,
+                version: this.app.system.os.version,
+                properties: Object.keys(this.app.system.os)
+            },
+            desktop: {
+                wallpaper: this.app.system.desktop.wallpaper,
+                properties: Object.keys(this.app.system.desktop)
+            },
             apps: {
-                desktop: this.app.system.apps.desktop.map(app => app.id),
-                installed: this.app.system.apps.installed.map(app => app.id)
+                desktop: this.app.system.apps.desktop.map(app => ({id: app.id, name: app.name})),
+                installed: this.app.system.apps.installed.map(app => ({id: app.id, name: app.name}))
             },
             taskbar: {
-                ...Object.keys(this.app.system.taskbar),
-                systemTray: this.app.system.taskbar.systemTray.map(item => item.id)
+                position: this.app.system.taskbar.position,
+                properties: Object.keys(this.app.system.taskbar),
+                systemTray: this.app.system.taskbar.systemTray.map(item => ({id: item.id, name: item.name}))
             },
             notifications: {
-                ...Object.keys(this.app.system.notifications)
+                properties: Object.keys(this.app.system.notifications)
             },
-            user: Object.keys(this.app.system.user),
-            security: Object.keys(this.app.system.security),
-            systemSettings: Object.keys(this.app.system.systemSettings),
+            user: {
+                name: this.app.system.user.name,
+                properties: Object.keys(this.app.system.user)
+            },
+            security: {
+                passwordEnabled: this.app.system.security.passwordEnabled,
+                properties: Object.keys(this.app.system.security)
+            },
+            systemSettings: {
+                language: this.app.system.systemSettings.language,
+                timeFormat: this.app.system.systemSettings.timeFormat,
+                properties: Object.keys(this.app.system.systemSettings)
+            },
             startMenu: {
-                categories: this.app.system.startMenu.categories.map(cat => cat.id)
+                categories: this.app.system.startMenu.categories.map(cat => ({id: cat.id, name: cat.name})),
+                properties: Object.keys(this.app.system.startMenu)
             },
-            lockScreen: Object.keys(this.app.system.lockScreen),
-            availableConfigFiles: [
+            lockScreen: {
+                wallpaper: this.app.system.lockScreen.wallpaper,
+                properties: Object.keys(this.app.system.lockScreen)
+            },
+            configFiles: [
                 'os-config.json',
                 'desktop-config.json', 
                 'apps-config.json',
@@ -109,7 +141,6 @@ export class CustomizationManager {
     }
     
     async callLLM({ prompt, systemStructure, currentConfig, action }) {
-        // This function will call the LLM to process customization requests
         try {
             // Prepare the message content based on the action
             let content;
@@ -128,7 +159,9 @@ Respond directly with JSON, following this schema, and no other text:
 The OS has the following structure:
 ${JSON.stringify(systemStructure, null, 2)}
 
-User's customization request: "${prompt}"`
+User's customization request: "${prompt}"
+
+Reply with a detailed list of paths that need to be changed to fulfill this request. Be specific and include all relevant paths.`
                     }
                 ];
             } else if (action === 'customize') {
@@ -146,7 +179,9 @@ Respond directly with JSON, following this schema, and no other text:
 Current configuration:
 ${JSON.stringify(currentConfig, null, 2)}
 
-User's customization request: "${prompt}"`
+User's customization request: "${prompt}"
+
+Reply with specific changes needed to fulfill this request. Provide exact values for each property that needs to be changed.`
                     }
                 ];
             }
@@ -164,7 +199,7 @@ User's customization request: "${prompt}"`
             return JSON.parse(completion.content);
         } catch (error) {
             console.error('Error calling LLM:', error);
-            throw new Error('Failed to process customization request');
+            throw new Error('Failed to process customization request. Please try again or be more specific.');
         }
     }
     
@@ -173,7 +208,7 @@ User's customization request: "${prompt}"`
         let current = this.app.system;
         
         for (const part of parts) {
-            if (current[part] === undefined) {
+            if (current === undefined || current === null) {
                 return null;
             }
             current = current[part];
@@ -183,10 +218,12 @@ User's customization request: "${prompt}"`
     }
     
     applyCustomization(changes) {
+        // First update the data model
         for (const [path, value] of Object.entries(changes)) {
             const parts = path.split('.');
             let current = this.app.system;
             
+            // Navigate to the object that will contain the final property
             for (let i = 0; i < parts.length - 1; i++) {
                 const part = parts[i];
                 if (current[part] === undefined) {
@@ -195,17 +232,17 @@ User's customization request: "${prompt}"`
                 current = current[part];
             }
             
+            // Set the property value
             const finalProp = parts[parts.length - 1];
             current[finalProp] = value;
         }
         
-        for (const path of Object.keys(changes)) {
+        // Then save overrides to localStorage
+        for (const [path, value] of Object.entries(changes)) {
             const configFile = this.getConfigFileForPath(path);
             if (configFile) {
                 const configPath = path.split('.').slice(1).join('.');
-                const configValue = changes[path];
-                
-                this.saveOverride(configFile, configPath, configValue);
+                this.saveOverride(configFile, configPath, value);
             }
         }
     }
@@ -237,12 +274,15 @@ User's customization request: "${prompt}"`
                 overrides[filename] = {};
             }
             
-            const nestedPath = path.split('.').slice(1).join('.');
-            this.setNestedProperty(overrides[filename], nestedPath, value);
+            this.setNestedProperty(overrides[filename], path, value);
             
             localStorage.setItem('customos-overrides', JSON.stringify(overrides));
+            
+            // Also log for debugging
+            console.log(`Saved override: ${filename} - ${path} = `, value);
         } catch (error) {
             console.error('Error saving override:', error);
+            throw new Error('Failed to save customization settings');
         }
     }
     
@@ -269,6 +309,7 @@ User's customization request: "${prompt}"`
     }
     
     retryCustomization() {
+        this.app.customizationPrompt = this.lastCustomizationPrompt;
         this.app.customizationResult = null;
         this.processCustomization();
     }

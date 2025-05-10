@@ -5,8 +5,26 @@ export const CustomizationApp = {
         return {
             customizationPrompt: '',
             customizationLoading: false,
-            customizationResult: null
+            customizationResult: null,
+            examples: [
+                "Change the desktop wallpaper to a scenic mountain landscape",
+                "Make the taskbar transparent and move it to the top",
+                "Change the system theme to dark mode",
+                "Add a new productivity app to the desktop"
+            ],
+            recentCustomizations: []
         };
+    },
+    mounted() {
+        // Load recent customizations from localStorage
+        try {
+            const recentCustomizationsJson = localStorage.getItem('customos-recent-customizations');
+            if (recentCustomizationsJson) {
+                this.recentCustomizations = JSON.parse(recentCustomizationsJson);
+            }
+        } catch (error) {
+            console.error('Error loading recent customizations:', error);
+        }
     },
     methods: {
         async applyCustomization() {
@@ -16,59 +34,38 @@ export const CustomizationApp = {
             this.customizationResult = null;
             
             try {
-                // Tell the parent OS to handle the customization
-                // In a real implementation, this would pass the customization to the OS
-                
-                // Simulate communication with the OS
                 // Find the parent OS Vue instance
-                // In a real implementation, this would use a proper event bus or Vuex
                 const osApp = this.findOSApp();
                 if (!osApp) {
                     throw new Error('Could not connect to OS system');
                 }
                 
-                // Call the OS's customization method
+                // Call the OS's customization manager to process the customization
                 osApp.customizationPrompt = this.customizationPrompt;
-                osApp.toggleCustomizationMode();
+                await osApp.processCustomization();
                 
                 // Wait for customization to complete
-                // In a real implementation, this would use a proper callback or promise
-                await new Promise(resolve => {
-                    const checkInterval = setInterval(() => {
-                        if (osApp.customizationResult) {
-                            clearInterval(checkInterval);
-                            this.customizationResult = osApp.customizationResult;
-                            resolve();
-                        }
-                    }, 100);
-                });
+                const result = osApp.customizationResult;
+                this.customizationResult = result;
+                
+                // If successful, add to recent customizations
+                if (result && result.success) {
+                    this.addToRecentCustomizations(this.customizationPrompt);
+                    // Clear the input after successful customization
+                    this.customizationPrompt = '';
+                }
                 
             } catch (error) {
                 console.error('Customization error:', error);
                 this.customizationResult = {
                     success: false,
-                    error: error.message
+                    error: error.message || 'An unknown error occurred'
                 };
             } finally {
                 this.customizationLoading = false;
             }
         },
-        resetCustomization() {
-            if (!confirm('Are you sure you want to reset all OS customizations to default?')) {
-                return;
-            }
-            
-            try {
-                // Clear all overrides from localStorage
-                localStorage.removeItem('customos-overrides');
-                
-                // Reload the page to apply defaults
-                window.location.reload();
-            } catch (error) {
-                console.error('Error resetting customizations:', error);
-                alert('Error resetting customizations: ' + error.message);
-            }
-        },
+        
         findOSApp() {
             // Traverse up the component tree to find the OS app
             let current = this;
@@ -79,7 +76,66 @@ export const CustomizationApp = {
                 }
             }
             return null;
+        },
+        
+        resetCustomization() {
+            if (!confirm('Are you sure you want to reset all OS customizations to default?')) {
+                return;
+            }
+            
+            try {
+                // Clear all overrides from localStorage
+                localStorage.removeItem('customos-overrides');
+                
+                this.customizationResult = {
+                    success: true,
+                    message: "All customizations have been reset to default. Reloading..."
+                };
+                
+                // Reload the page after a brief delay to show the success message
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error resetting customizations:', error);
+                this.customizationResult = {
+                    success: false,
+                    error: 'Error resetting customizations: ' + error.message
+                };
+            }
+        },
+        
+        useExample(example) {
+            this.customizationPrompt = example;
+        },
+        
+        useRecentCustomization(customization) {
+            this.customizationPrompt = customization;
+        },
+        
+        addToRecentCustomizations(prompt) {
+            // Add to recent customizations, avoiding duplicates
+            if (!this.recentCustomizations.includes(prompt)) {
+                this.recentCustomizations.unshift(prompt);
+                // Keep only the last 5 customizations
+                this.recentCustomizations = this.recentCustomizations.slice(0, 5);
+                
+                // Save to localStorage
+                try {
+                    localStorage.setItem('customos-recent-customizations', 
+                        JSON.stringify(this.recentCustomizations));
+                } catch (error) {
+                    console.error('Error saving recent customizations:', error);
+                }
+            }
+        },
+        
+        clearRecentCustomizations() {
+            if (confirm('Clear all recent customizations?')) {
+                this.recentCustomizations = [];
+                localStorage.removeItem('customos-recent-customizations');
+            }
         }
     }
 };
-
