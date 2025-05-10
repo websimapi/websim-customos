@@ -17,13 +17,13 @@ export const SettingsApp = {
     },
     async created() {
         try {
-            // Load all relevant settings
-            const osConfig = await fetch('config/os-config.json').then(r => r.json());
-            const desktopConfig = await fetch('config/desktop-config.json').then(r => r.json());
-            const taskbarConfig = await fetch('config/taskbar-config.json').then(r => r.json());
-            const userConfig = await fetch('config/user-config.json').then(r => r.json());
-            const securityConfig = await fetch('config/security-config.json').then(r => r.json());
-            const systemConfig = await fetch('config/system-config.json').then(r => r.json());
+            // Load all relevant settings with error handling
+            const osConfig = await fetch('config/os-config.json').then(r => r.json()).catch(() => ({}));
+            const desktopConfig = await fetch('config/desktop-config.json').then(r => r.json()).catch(() => ({}));
+            const taskbarConfig = await fetch('config/taskbar-config.json').then(r => r.json()).catch(() => ({}));
+            const userConfig = await fetch('config/user-config.json').then(r => r.json()).catch(() => ({}));
+            const securityConfig = await fetch('config/security-config.json').then(r => r.json()).catch(() => ({}));
+            const systemConfig = await fetch('config/system-config.json').then(r => r.json()).catch(() => ({}));
             
             this.settings = {
                 personalization: {
@@ -38,9 +38,9 @@ export const SettingsApp = {
                     user: userConfig
                 },
                 time: {
-                    language: systemConfig.language,
-                    timeFormat: systemConfig.timeFormat,
-                    dateFormat: systemConfig.dateFormat
+                    language: systemConfig.language || 'en',
+                    timeFormat: systemConfig.timeFormat || '12h',
+                    dateFormat: systemConfig.dateFormat || 'MM/DD/YYYY'
                 },
                 security: securityConfig,
                 customization: {}
@@ -51,6 +51,15 @@ export const SettingsApp = {
             
         } catch (error) {
             console.error('Error loading settings:', error);
+            // Initialize with empty defaults to prevent errors
+            this.settings = {
+                personalization: { desktop: {}, taskbar: {} },
+                system: { info: {}, settings: {} },
+                accounts: { user: {} },
+                time: { language: 'en', timeFormat: '12h', dateFormat: 'MM/DD/YYYY' },
+                security: {},
+                customization: {}
+            };
         }
     },
     methods: {
@@ -120,6 +129,8 @@ export const SettingsApp = {
             }
         },
         getNestedProperty(obj, path) {
+            if (!obj || !path) return undefined;
+            
             const parts = path.split('.');
             let current = obj;
             
@@ -158,4 +169,3 @@ export const SettingsApp = {
         }
     }
 };
-

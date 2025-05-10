@@ -16,7 +16,18 @@ const CustomOS = {
             password: '',
             
             // System configuration (will be loaded from JSON)
-            system: null,
+            system: {
+                os: { name: 'CustomOS', version: '1.0.0' },
+                desktop: { wallpaper: 'assets/default-wallpaper.jpg' },
+                apps: { desktop: [], installed: [] },
+                taskbar: { position: 'bottom', systemTray: [] },
+                notifications: { items: [] },
+                user: { name: 'User', avatar: 'assets/default-avatar.png' },
+                security: { passwordEnabled: false },
+                systemSettings: {},
+                startMenu: { categories: [] },
+                lockScreen: { wallpaper: 'assets/default-lockscreen.jpg' }
+            },
             
             // UI state
             currentTime: '',
@@ -69,7 +80,7 @@ const CustomOS = {
         // Simulate loading
         setTimeout(() => {
             this.loading = false;
-            if (this.system.security.lockOnStartup) {
+            if (this.system?.security?.lockOnStartup) {
                 this.lockScreen = true;
             }
         }, 2000);
@@ -97,16 +108,16 @@ const CustomOS = {
         async loadSystemConfig() {
             try {
                 // Load all configuration files
-                const osConfig = await loadConfig('os-config.json');
-                const desktopConfig = await loadConfig('desktop-config.json');
-                const appsConfig = await loadConfig('apps-config.json');
-                const taskbarConfig = await loadConfig('taskbar-config.json');
-                const notificationsConfig = await loadConfig('notifications-config.json');
-                const userConfig = await loadConfig('user-config.json');
-                const securityConfig = await loadConfig('security-config.json');
-                const systemConfig = await loadConfig('system-config.json');
-                const startMenuConfig = await loadConfig('startmenu-config.json');
-                const lockScreenConfig = await loadConfig('lockscreen-config.json');
+                const osConfig = await loadConfig('os-config.json').catch(() => ({ name: 'CustomOS', version: '1.0.0' }));
+                const desktopConfig = await loadConfig('desktop-config.json').catch(() => ({ wallpaper: 'assets/default-wallpaper.jpg' }));
+                const appsConfig = await loadConfig('apps-config.json').catch(() => ({ desktop: [], installed: [] }));
+                const taskbarConfig = await loadConfig('taskbar-config.json').catch(() => ({ position: 'bottom', pinnedApps: [], systemTray: [] }));
+                const notificationsConfig = await loadConfig('notifications-config.json').catch(() => ({ items: [] }));
+                const userConfig = await loadConfig('user-config.json').catch(() => ({ name: 'User', avatar: 'assets/default-avatar.png' }));
+                const securityConfig = await loadConfig('security-config.json').catch(() => ({ passwordEnabled: false }));
+                const systemConfig = await loadConfig('system-config.json').catch(() => ({}));
+                const startMenuConfig = await loadConfig('startmenu-config.json').catch(() => ({ categories: [] }));
+                const lockScreenConfig = await loadConfig('lockscreen-config.json').catch(() => ({ wallpaper: 'assets/default-lockscreen.jpg' }));
                 
                 // Combine all configs into a single system object
                 this.system = {
@@ -259,9 +270,10 @@ const CustomOS = {
             this.startMenuOpen = false;
         },
         getStartMenuPosition() {
-            if (this.system?.taskbar?.position === 'top') return 'top';
-            if (this.system?.taskbar?.position === 'left') return 'left';
-            if (this.system?.taskbar?.position === 'right') return 'right';
+            const position = this.system?.taskbar?.position || 'bottom';
+            if (position === 'top') return 'top';
+            if (position === 'left') return 'left';
+            if (position === 'right') return 'right';
             return '';
         },
         // Power Options Methods
@@ -290,7 +302,8 @@ const CustomOS = {
         },
         // App and Window Management
         findAppById(id) {
-            return this.system?.apps?.installed.find(app => app.id === id) || null;
+            if (!id || !this.system?.apps?.installed) return null;
+            return this.system.apps.installed.find(app => app.id === id) || null;
         },
         launchApp(app) {
             // Check if app is already open
@@ -540,7 +553,7 @@ const CustomOS = {
         },
         // App Category Methods
         getAppsByCategory(categoryId) {
-            return this.system?.apps?.installed.filter(app => app.category === categoryId) || [];
+            return (this.system?.apps?.installed || []).filter(app => app.category === categoryId);
         },
         // Settings
         openSettings() {
@@ -824,4 +837,3 @@ document.addEventListener('DOMContentLoaded', () => {
     const app = createApp(CustomOS);
     app.mount('#custom-os');
 });
-

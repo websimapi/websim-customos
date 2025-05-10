@@ -32,7 +32,8 @@ export async function loadConfig(filename) {
         return config;
     } catch (error) {
         console.error(`Error loading config file ${filename}:`, error);
-        throw error;
+        // Return an empty object instead of throwing
+        return {};
     }
 }
 
@@ -131,6 +132,8 @@ export function removeOverride(filename, path) {
  * @returns {Object|null} - The configuration section
  */
 function getConfigSectionForFile(config, filename) {
+    if (!config) return null;
+    
     const mapping = {
         'os-config.json': config.os,
         'desktop-config.json': config.desktop,
@@ -237,4 +240,3 @@ function removeNestedProperty(obj, path) {
     const finalPart = parts[parts.length - 1];
     delete current[finalPart];
 }
-

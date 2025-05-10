@@ -23,20 +23,20 @@
         </div>
 
         <!-- Lock Screen -->
-        <div v-else-if="lockScreen" class="lock-screen" :style="{'background-image': `url(${system.lockScreen.wallpaper})`}">
+        <div v-else-if="lockScreen" class="lock-screen" :style="{'background-image': `url(${system?.lockScreen?.wallpaper || 'assets/default-lockscreen.jpg'})`}">
             <div class="time">{{ currentTime }}</div>
             <div class="date">{{ currentDate }}</div>
             <div class="unlock-container">
-                <input v-if="system.security.passwordEnabled" type="password" v-model="password" @keyup.enter="unlock" placeholder="Enter password">
+                <input v-if="system?.security?.passwordEnabled" type="password" v-model="password" @keyup.enter="unlock" placeholder="Enter password">
                 <button @click="unlock" class="unlock-btn">Unlock</button>
             </div>
         </div>
 
         <!-- Desktop -->
-        <div v-else class="desktop" :style="{'background-image': `url(${system.desktop.wallpaper})`}">
+        <div v-else class="desktop" :style="{'background-image': `url(${system?.desktop?.wallpaper || 'assets/default-wallpaper.jpg'})`}">
             <!-- Desktop Icons -->
             <div class="desktop-icons">
-                <div v-for="app in system.apps.desktop" :key="app.id" class="desktop-icon" @click="launchApp(app)">
+                <div v-for="app in system?.apps?.desktop || []" :key="app.id" class="desktop-icon" @click="launchApp(app)">
                     <div class="icon-image" :style="{'background-image': `url(${app.icon})`}"></div>
                     <div class="icon-name">{{ app.name }}</div>
                 </div>
@@ -65,9 +65,9 @@
             </div>
             
             <!-- Taskbar -->
-            <div class="taskbar" :class="system.taskbar.position">
+            <div class="taskbar" :class="system?.taskbar?.position || 'bottom'">
                 <div class="start-button" @click="toggleStartMenu">
-                    <img :src="system.taskbar.startButtonIcon" alt="Start">
+                    <img :src="system?.taskbar?.startButtonIcon || 'assets/start-icon.png'" alt="Start">
                 </div>
                 <div class="taskbar-items">
                     <div v-for="app in taskbarApps" :key="app.id" class="taskbar-item" 
@@ -77,7 +77,7 @@
                 </div>
                 <div class="system-tray">
                     <div class="time-display">{{ currentTime }}</div>
-                    <div v-for="item in system.taskbar.systemTray" :key="item.id" class="system-tray-item" 
+                    <div v-for="item in system?.taskbar?.systemTray || []" :key="item.id" class="system-tray-item" 
                          @click="systemTrayItemClick(item)">
                         <img :src="item.icon" :alt="item.name">
                     </div>
@@ -87,11 +87,11 @@
             <!-- Start Menu -->
             <div v-if="startMenuOpen" class="start-menu" :class="getStartMenuPosition()">
                 <div class="user-profile">
-                    <img :src="system.user.avatar" alt="User Avatar">
-                    <div class="user-name">{{ system.user.name }}</div>
+                    <img :src="system?.user?.avatar || 'assets/default-avatar.png'" alt="User Avatar">
+                    <div class="user-name">{{ system?.user?.name || 'User' }}</div>
                 </div>
                 <div class="start-menu-apps">
-                    <div v-for="appCategory in system.startMenu.categories" :key="appCategory.id" class="app-category">
+                    <div v-for="appCategory in system?.startMenu?.categories || []" :key="appCategory.id" class="app-category">
                         <div class="category-title">{{ appCategory.name }}</div>
                         <div class="category-apps">
                             <div v-for="app in getAppsByCategory(appCategory.id)" :key="app.id" class="start-menu-app" 
@@ -123,7 +123,7 @@
                     <button class="clear-all" @click="clearAllNotifications">Clear All</button>
                 </div>
                 <div class="notifications-list">
-                    <div v-for="notification in system.notifications.items" :key="notification.id" class="notification-item">
+                    <div v-for="notification in system?.notifications?.items || []" :key="notification.id" class="notification-item">
                         <div class="notification-icon" :style="{'background-image': `url(${notification.icon})`}"></div>
                         <div class="notification-content">
                             <div class="notification-title">{{ notification.title }}</div>
@@ -152,10 +152,10 @@
                     </div>
                     <div v-if="customizationResult" class="customization-result">
                         <div v-if="customizationResult.success" class="success-message">
-                            <p>✅ Customization applied successfully!</p>
+                            <p> Customization applied successfully!</p>
                         </div>
                         <div v-else class="error-message">
-                            <p>❌ Error applying customization:</p>
+                            <p> Error applying customization:</p>
                             <pre>{{ customizationResult.error }}</pre>
                             <button @click="retryCustomization">Retry</button>
                         </div>
@@ -169,7 +169,7 @@
     <script type="text/x-template" id="file-explorer-template">
         <div class="file-explorer">
             <div class="folder-navigation">
-                <button @click="navigateUp">⬆ Up</button>
+                <button @click="navigateUp"> Up</button>
                 <div class="current-path">{{ currentPath }}</div>
             </div>
             <div class="files-container">
@@ -267,4 +267,3 @@
 <script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
-
